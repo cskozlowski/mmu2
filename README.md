@@ -7,4 +7,4 @@ A serial cable is required (5 pin) in order to communicate between this board an
 
 
 WARNING:  This project is a work in progress and requires a knowledge of Mk3 hardware and software.  If you don't know what you 
-          are doing, ou can PERMANTANTLY damage your hardware.  I hope you have been appropriately warned.
+          are doing, you can/will PERMANENTLY damage your hardware.  I hope you have been appropriately warned.
