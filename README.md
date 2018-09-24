@@ -1,3 +1,8 @@
 # mmu2
+WARNING:  This project is a work in progress and requires a knowledge of Mk3 hardware and software.  If you don't know what you 
+          are doing, ou can PERMANTANTLY damage your hardware.  I hope you have been appropriately warned.
+          
+This code was developed on an Arduino Mega board using three 8825 stepper motors to control the MMU2 multi-color print head. 
+It was designed to operate with the PRUSA mk3 printer.  
 
-This code was developed on an Arduino Mega board using three 8825 stepper motors to control the MMU2 multi-color print head
+A serial cable is required (5 pin) in order to communicate between this board and the Mk3 controller.  (Vcc, Tx, Rx, GND, Reset).  Only 3 pins are required (Tx, Rx and Reset) in order to work properly with the Mk3.
