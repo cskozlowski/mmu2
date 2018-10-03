@@ -13,7 +13,13 @@
 //                    Failure Recovery Modes - basically non-existent
 //                    Uses the serial interface with a host computer at the moment - probably could do some smarter things
 //                                                                                   like selection switches.
-//
+//                   10.2.18  Moved from breadboard to RAMPS 1.6 Board and remapped ALL addresses
+//                            Discovered the filament idler motor needed to be set at a higher torque (more current)
+//                            (this was affected filament load consistency)
+//                   10.2.18  Major Disaster, lost my codebase on my PC (I am an idiot)
+//                            Thank God for github so I could recover a week old version of my code
+//                   10.1.18  Added filament sensor to the extruder head (helps reliability
+
 
 //#include <SoftwareSerial.h>
 #include <Arduino.h>
@@ -55,7 +61,7 @@ int command = 0;
 #define INACTIVE 0
 #define ACTIVE 1
 
-#define CSDISTANCE 368
+//#define CSDISTANCE 368
 
 //#define POSITION1   0              // position for the color selector stepper motor 
 //#define POSITION2   CSDISTANCE
@@ -67,7 +73,7 @@ int command = 0;
 float bearingAbsPos[5] = {1, 24, 48, 72, 96}; // absolute position of roller bearing stepper motor
                                                     // changed position #2 to 372  (still tuning this little sucker
 
-#define CSSTEPS 355                        //  
+#define CSSTEPS 357                        //  
                                                  
 int selectorAbsPos[5] = {0,CSSTEPS*1,CSSTEPS*2,CSSTEPS*3,CSSTEPS*4};  // absolute position of selector stepper motor
 
@@ -164,13 +170,15 @@ void setup() {
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //  check the serial interface to see if it is active
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef CSKDEBUG
+
   while (!Serial1.available()) {
 
-      delay(100); 
+      //delay(100); 
+      Serial.println("Waiting for message from mk3");
+      delay(1000);
   }
   Serial.println("inbound message from mk3");
-#endif
+
 
  
 
