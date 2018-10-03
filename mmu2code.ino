@@ -124,7 +124,11 @@ byte filamentSwitch = A5;       // this switch was added on 10.1.18 to help with
 
 //SoftwareSerial Serial1(10,11); // RX, TX (communicates with the MK3 controller board
 
-
+int f0Min = 1000, f1Min = 1000, f2Min = 1000, f3Min = 1000, f4Min = 1000;
+int f0Max, f1Max, f2Max, f3Max, f4Max = 0; 
+int f0Avg, f1Avg, f2Avg, f3Avg, f4Avg;
+int f0Distance, f1Distance, f2Distance, f3Distance, f4Distance = 0;
+int f0ToolChange, f1ToolChange, f2ToolChange, f3ToolChange, f4ToolChange = 0;
 
 
 void setup() {
@@ -1151,6 +1155,70 @@ loop:
                                    flag = 1;
                                    Serial.print("Filament distance traveled (mm): ");
                                    Serial.println(filamentDistance);
+                                  
+                                   switch(filamentSelection) {
+                                       case 0:
+                                             if (filamentDistance < f0Min) {
+                                                  f0Min = filamentDistance;
+                                             }
+                                             if (filamentDistance > f0Max) {
+                                                  f0Max = filamentDistance;
+                                             }
+                                             f0Distance += filamentDistance;
+                                             f0ToolChange++;
+                                             f0Avg = f0Distance/f0ToolChange;
+                                             break;
+                                       case 1:
+                                            if (filamentDistance < f1Min) {
+                                                  f1Min = filamentDistance;
+                                             }
+                                             if (filamentDistance > f1Max) {
+                                                  f1Max = filamentDistance;
+                                             }
+                                             f1Distance += filamentDistance;
+                                             f1ToolChange++;
+                                             f1Avg = f1Distance/f1ToolChange;
+                                             break;
+                                             
+                                       case 2:
+                                             if (filamentDistance < f2Min) {
+                                                  f2Min = filamentDistance;
+                                             }
+                                             if (filamentDistance > f2Max) {
+                                                  f2Max = filamentDistance;
+                                             }
+                                             f2Distance += filamentDistance;
+                                             f2ToolChange++;
+                                             f2Avg = f2Distance/f2ToolChange;
+                                             break;                                      
+                                       case 3:
+                                             if (filamentDistance < f3Min) {
+                                                  f3Min = filamentDistance;
+                                             }
+                                             if (filamentDistance > f3Max) {
+                                                  f3Max = filamentDistance;
+                                             }
+                                             f3Distance += filamentDistance;
+                                             f3ToolChange++;
+                                             f3Avg = f3Distance/f3ToolChange;
+                                             break;                                      
+                                       case 4:
+                                             if (filamentDistance < f4Min) {
+                                                  f4Min = filamentDistance;
+                                             }
+                                             if (filamentDistance > f1Max) {
+                                                  f4Max = filamentDistance;
+                                             }
+                                             f4Distance += filamentDistance;
+                                             f4ToolChange++;
+                                             f4Avg = f4Distance/f4ToolChange;
+                                             break;                                      
+                                       default:
+                                             Serial.println("Error, Invalid Filament Selection");
+                                             
+                                   }
+                                   printFilamentStats();
+                                   
                               }
                         }
                         // go an additional 31mm 
@@ -1178,6 +1246,44 @@ loop:
                         delay(200);
                         Serial1.print("ok\n");    // send back acknowledge to the mk3 controller
                         
+}
+
+void printFilamentStats() {
+      Serial.print("F0 Min: ");
+      Serial.print(f0Min);
+      Serial.print("  F0 Max: ");
+      Serial.print(f0Max);
+      Serial.print("  F0 Avg: ");
+      Serial.println(f0Avg);
+
+      Serial.print("F1 Min: ");
+      Serial.print(f1Min);
+      Serial.print("  F1 Max: ");
+      Serial.print(f1Max);
+      Serial.print("  F1 Avg: ");
+      Serial.println(f1Avg);
+
+      Serial.print("F2 Min: ");
+      Serial.print(f2Min);
+      Serial.print("  F2 Max: ");
+      Serial.print(f2Max);
+      Serial.print("  F2 Avg: ");
+      Serial.println(f2Avg);
+
+      Serial.print("F3 Min: ");
+      Serial.print(f3Min);
+      Serial.print("  F3 Max: ");
+      Serial.print(f3Max);
+      Serial.print("  F3 Avg: ");
+      Serial.println(f3Avg);
+
+      Serial.print("F4 Min: ");
+      Serial.print(f4Min);
+      Serial.print("  F4 Max: ");
+      Serial.print(f4Max);
+      Serial.print("  F4 Avg: ");
+      Serial.println(f4Avg);
+      
 }
 
 int isFilamentLoaded() {
