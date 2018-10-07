@@ -10,3 +10,7 @@ A serial cable is required (5 pin) in order to communicate between this board an
 
 WARNING:  This project is a work in progress and requires a knowledge of Mk3 hardware and software.  If you don't know what you 
           are doing, you can/will PERMANENTLY damage your hardware.  I hope you have been appropriately warned.
+          
+ADDITIONAL WARNING (you probably won't read this because it is too far down the page):
+
+           Stepper Motor controllers (8825) are high current devices and they get warm/hot.  You can damage these controller easily   (I have) if you don't adjust the source current.  There is a very small variable resister you will have to adjust, I recommend setting this to 0.6V (details on how to adjust this are on the polulu.com website - look for 8825 stepper motor controller).  If you don't have a multimeter for measureing voltage then STOP - you are in deep waters).
