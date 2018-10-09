@@ -4,6 +4,10 @@ Bill of Materials (10.7.2018)
        The most expensive parts are:  stepper motors ($30 for the three I purchased), arduino ($14) and RAMPS 1.6 board ($14).
 This is a starter list of stuff you will need to complete this MMU2 home brew clone
 
+Change Notes:
+     10.9.18   626-ZZ should say 625-ZZ bearings ... 626-ZZ are rarer than 1.85mm PTFE
+     10.9.18   Added 7mm ball bearing (you need this for the FINDA detector
+
 MMU2 plastic parts - https://www.prusa3d.com/prusa-i3-printable-parts/
     
 3   Stepper Motors (https://www.amazon.com/gp/product/B0716S32G4/ref=oh_aui_detailpage_o03_s00?ie=UTF8&psc=1)
@@ -15,7 +19,7 @@ MMU2 plastic parts - https://www.prusa3d.com/prusa-i3-printable-parts/
 2   150mm x 5mm steel shafts (https://www.amazon.com/gp/product/B01B5QTM8I/ref=oh_aui_detailpage_o01_s00?ie=UTF8&psc=1)
       (these shafts are used for the selector head shaft guides, you will have to cut them down to size)
       (if you don't know how to cut steel shafts then please stop and go do something else)
-9   626-ZZ bearings (https://www.amazon.com/gp/product/B01CUTIQWW/ref=oh_aui_detailpage_o04_s01?ie=UTF8&psc=1)
+9   625-ZZ bearings (https://www.amazon.com/gp/product/B01CUTIQWW/ref=oh_aui_detailpage_o04_s01?ie=UTF8&psc=1)
 20  3mm thin (1.8mm) square nuts) https://www.amazon.com/gp/product/B073SBCMBM/ref=oh_aui_detailpage_o05_s00?ie=UTF8&psc=1
 1   5mm x 5mm couple https://www.amazon.com/gp/product/B0159WO7T8/ref=oh_aui_detailpage_o02_s00?ie=UTF8&psc=1
                      (you need one but buy two because you can) 
