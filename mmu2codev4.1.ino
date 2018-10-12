@@ -34,7 +34,7 @@
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high
 
-#define MMU2_VERSION "3.4  10/09/18"
+#define MMU2_VERSION "4.1  10/12/18"
 
 #define STEPSPERMM  144           // these are the number of steps required to travel 1 mm using the extruder motor
 
