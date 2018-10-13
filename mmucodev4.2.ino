@@ -1,7 +1,7 @@
 // CSK MMU2 Controller Version
 //
 //  Code developed by Chuck Kozlowski
-//  September 19, 2018
+//  September 19, 2018 
 //
 //  Code was developed because I am impatiently waiting for my MMU2 to arrive so I thought
 //  I would develop some code to operate the PRUSA MMU2 hardware
@@ -9,9 +9,10 @@
 // This code uses 3 stepper motor controllers and 1 Pinda filament sensor, and 1 additional filament sensor on the mk3 extruder top
 //
 //
-//  Work to be done:  Interface Control with the Einsy Board (MK3)
-//                    Refine speed settings for each stepper motor
-//                    Failure Recovery Modes - basically non-existent
+//  Work to be done:  Interface Control with the Einsy Board (MK3) - (work completed on 9.25.18)
+//                    Refine speed and acceleration settings for each stepper motor 
+//                    Failure Recovery Modes - basically non-existent (work completed on 10.5.18)
+//
 //                    Uses the serial interface with a host computer at the moment - probably could do some smarter things
 //                                                                                   like selection switches.
 //                   10.5.18  Made major tweak to the 'C' command, now matches the speed of the mk3 extruder gear (see slic3r 'load' setting)
