@@ -5,6 +5,8 @@ Bill of Materials (10.7.2018)
 This is a starter list of stuff you will need to complete this MMU2 home brew clone
 
 Change Notes:
+     10.17.18 Added 3 STL files required for build of the home-brew MMU2 (do the NEMA17 holder in PETG, other pieces can be 
+                                                                          done in PLA or PETG)
      10.16.18 Changed the stepper motor recommendation, you can also get them on aliexpress.com)
      10.10.18  Added references to 3 STL design files that you will need (see STL for additional details)
      10.9.18   626-ZZ should say 625-ZZ bearings ... 626-ZZ are rarer than 1.85mm PTFE
