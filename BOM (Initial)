@@ -5,6 +5,7 @@ Bill of Materials (10.7.2018)
 This is a starter list of stuff you will need to complete this MMU2 home brew clone
 
 Change Notes:
+     10.16.18 Changed the stepper motor recommendation, you can also get them on aliexpress.com)
      10.10.18  Added references to 3 STL design files that you will need (see STL for additional details)
      10.9.18   626-ZZ should say 625-ZZ bearings ... 626-ZZ are rarer than 1.85mm PTFE
      10.9.18   Added 7mm ball bearing (you need this for the FINDA detector
@@ -12,8 +13,19 @@ Change Notes:
 
 MMU2 plastic parts - https://www.prusa3d.com/prusa-i3-printable-parts/
     
+             (DO NOT PURCHASE THESE MOTORS, THEY DO NOT HAVE SUFFICIENT STALL TORQUE)
 3   Stepper Motors (https://www.amazon.com/gp/product/B0716S32G4/ref=oh_aui_detailpage_o03_s00?ie=UTF8&psc=1)
-         Get a motor with a minimum of 40 N-cm of stall torque (you will thank me later)
+            (these motors are super cheap $10 per motor ... don't buy them because they don't have sufficient torque)
+            (I used them for 3 weeks and chased problems that won't be there if you get better motors
+            (get the motors I list below)
+            
+            (PURCHASE THESE STEPPER MOTORS INSTEAD)
+3   Stepper Motors (https://www.amazon.com/gp/product/B06XSYP24P/ref=oh_aui_detailpage_o01_s00?ie=UTF8&psc=1)
+            (these motors have 46 N-cm of stall torque.  They idler stepper motor needs quite a bit of stall torque to stay
+            in place when the bearing is being moved against the extruder stepper motor).
+            
+         Get a motor with a minimum of 45 N-cm of stall torque (you will thank me later)
+         
     These motors are nice and cheap - the problem with cheap is they are not 100% reliable. I am testing another brand at the 
     moment and when I have some decent test results I will report back.
 5   mk8 hobbed gears (https://www.amazon.com/gp/product/B07CJPP7R7/ref=oh_aui_detailpage_o03_s00?ie=UTF8&psc=1)
@@ -61,7 +73,7 @@ DigiKey Components (needed for cables and wiring)
       
 
 
-Random Tools (it's a project, you got to buy new tools - you live for this stuff)
+Random Tools (it's a project, you've got to buy new tools - you live for this stuff)
 
  1 Reamer (https://www.amazon.com/gp/product/B01EIH573K/ref=oh_aui_detailpage_o07_s00?ie=UTF8&psc=1)
            (used to make awesome interior bevelled edges in that damn 2mm (and 1.80mm) PTFE
