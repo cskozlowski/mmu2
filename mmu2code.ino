@@ -1,4 +1,3 @@
-
 // CSK MMU2 Controller Version
 //
 //  Code developed by Chuck Kozlowski
@@ -35,7 +34,7 @@
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high
 
-#define MMU2_VERSION "3.03  10/06/18"
+#define MMU2_VERSION "3.4  10/09/18"
 
 #define STEPSPERMM  144           // these are the number of steps required to travel 1 mm using the extruder motor
 
@@ -69,8 +68,9 @@ int command = 0;
 
 //************************************************************************************
 //* this clears the selector selector motor after the selected number of tool changes
+//* changed from 25 to 10 (10.10.18) 
 //*************************************************************************************
-#define TOOLSYNC 25                         // number of tool change (T) commands before a selector resync is necessary
+#define TOOLSYNC 10                         // number of tool change (T) commands before a selector resync is performed
 
 
 
@@ -597,6 +597,8 @@ void colorSelector(char selection) {
 loop:
   findaStatus = digitalRead(findaPin);    // check the pinda status ( DO NOT MOVE THE COLOR SELECTOR if filament is present)
   if (findaStatus == 1) {
+    fixTheProblem("colorSelector(): Error, filament is present between the MMU2 and the MK3 Extruder:  UNLOAD FILAMENT!!!");
+    
     Serial.println("colorSelector(): Serious Problem, filament is present between the MMU2 and Extruder:  UNLOAD FILAMENT !!!");
     Serial.println("Clear the problem and then hit any key");
     parkIdler();                   // move the idler out of the way
@@ -657,6 +659,23 @@ loop:
 
 
 }  // end of colorSelector routine()
+
+//****************************************************************************************************
+//* this routine is the common routine called for fixing the filament issues (loading or unloading)
+//****************************************************************************************************
+void fixTheProblem(String statement) {
+    Serial.println("********************* ERROR ************************");
+    Serial.println(statement);       // report the error to the user
+    Serial.println("********************* ERROR ************************");
+    Serial.println("Clear the problem and then hit any key to continue ");
+    
+    quickParkIdler();                   // move the idler out of the way 
+    while (!Serial.available()) {
+      //  wait until key is entered to proceed
+    }
+    Serial.readString();  // clear the keyboard buffer
+    quickUnParkIdler();                 // re-enage the idler
+}  
 
 
 // this is the motor with the lead screw (final stage of the MMU2 unit)
@@ -776,15 +795,8 @@ void loadFilamentToFinda() {
 
 loop:
   currentTime = millis();
-  if ((currentTime - startTime) > 10000) {         // 15 seconds worth of trying to unload the filament
-    Serial.println("loadFilamentToFinda() ERROR: Timeout occurred, Filament is not loading to FINDA sensor");
-    Serial.println("loadFilamentToFinda()        Fix the issue and then hit any key to continue");
-    parkIdler();                               // disengge the idler
-    while (!Serial.available()) {  // wait for keyboard entry
-
-
-    }
-    unParkIdler();          // re-engage the idler
+  if ((currentTime - startTime) > 10000) {         // 10 seconds worth of trying to unload the filament
+    fixTheProblem("UNLOAD FILAMENT ERROR:   timeout error, filament is not unloading past the FINDA sensor");
     startTime = millis();   // reset the start time clock
     Serial.readString();   // clear the serial buffer
   }
@@ -833,15 +845,8 @@ loop:
 
   currentTime = millis();
   if ((currentTime - startTime) > 15000) {         // 15 seconds worth of trying to unload the filament
-    Serial.println("unloadFilamenttoFinda() ERROR: Timeout occurred, Filament is not unloading");
-    Serial.println("unloadFilamenttoFinda(): Unload the filament manually, hit any key when done");
-    parkIdler();                 // move the Idler out of the way  10.6.18 so the jam can be cleared
-    while (!Serial.available()) {
-      // wait until key is hit
-
-    }
-    Serial.readString();     // clear the serial input
-    unParkIdler();            // move the idler back to where it belongs after the jam is cleared
+    
+    fixTheProblem("UNLOAD FILAMENT ERROR: filament is not unloading properly");
     startTime = millis();   // reset the start time
   }
 
@@ -1386,13 +1391,9 @@ loop:
 
   // added this timeout feature on 10.4.18 (2 second timeout)
   if ((currentTime - startTime) > 2000) {
-    Serial.println("filamentLoadToExtruder():  Error,  filament is not loading properly");
-    Serial.println("filamentLoadToExtruder():          fix the issue and then hit any key");
-    parkIdler();                                // disengage the idler to fix the filament issue
-    while (!Serial.available()) {}             // wait for key to be hit
-    Serial.readString();   // flush the keyboard buffer
+    fixTheProblem("FILAMENT LOAD ERROR:  Filament not detected by FINSA sensor, check the selector head in the MMU2");    
+
     startTime = millis();
-    unParkIdler();                            // re-engage the idler
   }
   if (findaStatus == 0)              // keep feeding the filament until the pinda sensor triggers
     goto loop;
@@ -1417,18 +1418,7 @@ loop:
 
     currentTime = millis();
     if ((currentTime - startTime) > 8000) { // only wait for 8 seconds
-      Serial.println("ERROR: filament load issue between FINDA and MK3 Switch, fix issue and hit any key");
-      // probably should wait for keyboard hit at this point
-      parkIdler();                  // disengage the idler to fix the filament issue
-      while (!Serial.available()) {
-
-        // wait for key to be hit
-      }
-      unParkIdler();                // re-engage the idler after keyboard entry
-
-      // need to clear the keyboard buffer
-      Serial.readString();          // clear the keyboard buffer
-
+      fixTheProblem("FILAMENT LOAD ERROR: Filament not detected by the MK3 filament sensor, check the bowden tube for clogging/binding");
       startTime = millis();         // reset the start Time
 
     }
@@ -1511,8 +1501,10 @@ loop:
   }
   // feed filament an additional 32 mm to hit the middle of the bondtech gear
   // go an additional 32mm (increased to 32mm on 10.4.18)
+  
   feedFilament(STEPSPERMM * 32);
 
+  
 
 
   //#############################################################################################################################
@@ -1598,6 +1590,15 @@ void toolChange( char selection) {
 
   ++toolChangeCount;                             // count the number of tool changes
   ++trackToolChanges;
+
+  //**********************************************************************************
+  // * 10.10.18 added an automatic reset of the tracktoolchange counter since going to
+  //            filament position '0' move the color selection ALL the way to the left
+  //*********************************************************************************
+  if (selection == '0')  {
+      Serial.println("toolChange()  filament '0' selected: resetting tracktoolchanges counter");
+      trackToolChanges = 0;
+  }
 
   Serial.print("Tool Change Count: ");
   Serial.println(toolChangeCount);
@@ -1725,10 +1726,13 @@ void filamentLoadWithBondTechGear() {
    //*****************************************************************************************************************
    //*  added this code snippet to not process a 'C' command that is essentially a repeat command
    //*****************************************************************************************************************
+#ifdef NOTDEF
    if (repeatTCmdFlag == ACTIVE) {
        Serial.println("filamentLoadWithBondTechGear(): filament already loaded and 'C' command already processed");
        return;
    }
+#endif
+
 
   findaStatus = digitalRead(findaPin);
 
@@ -1886,5 +1890,4 @@ void filamentLoadWithBondTechGear() {
   Serial.println("filamentLoadToExtruder(): Loading Filament to Print Head Complete");
 #endif
 
-
-} // end of filamentLoad with BondTechGear() routine
+}
