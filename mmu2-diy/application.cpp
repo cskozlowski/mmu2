@@ -35,6 +35,27 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include "application.h"
+
+
+
+static int isFilamentLoaded();
+static void initIdlerPosition();
+static void checkSerialInterface();
+static void initColorSelector();
+static void filamentLoadWithBondTechGear();
+static void toolChange( char selection);
+static void quickUnParkIdler();
+static void unParkIdler();
+static void unloadFilamentToFinda();
+static void parkIdler();
+static void activateColorSelector();
+static void idlerSelector(char filament);
+static void colorSelector(char selection);
+static void loadFilamentToFinda();
+static void fixTheProblem(String statement);
+static void csTurnAmount(int steps, int direction);
+static void feedFilament(unsigned int steps);
 
 
 #define SERIAL1ENABLED    1
@@ -186,7 +207,7 @@ unsigned long time0, time1, time2, time3, time4, time5;
 unsigned long timeCStart, timeCEnd;
 
 
-void setup() {
+void Application::setup() {
   // static int findaStatus;
 
   int waitCount;
@@ -304,7 +325,7 @@ continue_processing:
 
 // infinite loop - core of the program
 
-void loop() {
+void Application::loop() {
   int i;
   char rcvChar;
   int pindaStatus;
@@ -2156,5 +2177,10 @@ void filamentLoadWithBondTechGear() {
 #ifdef DEBUG
   Serial.println("filamentLoadToMK3(): Loading Filament to Print Head Complete");
 #endif
+
+}
+
+Application::Application()
+{
 
 }
