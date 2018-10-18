@@ -13,15 +13,9 @@
 //                    Failure Recovery Modes - basically non-existent
 //                    Uses the serial interface with a host computer at the moment - probably could do some smarter things
 //                                                                                   like selection switches.
-//                   10.2.18  Moved from breadboard to RAMPS 1.6 Board and remapped ALL addresses
-//                            Discovered the filament idler motor needed to be set at a higher torque (more current)
-//                            (this was affected filament load consistency)
-//                   10.2.18  Major Disaster, lost my codebase on my PC (I am an idiot)
-//                            Thank God for github so I could recover a week old version of my code
-//                   10.1.18  Added filament sensor to the extruder head (helps reliability
+//
 
-
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 #include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,12 +23,8 @@
 
 
 #define SERIAL1ENABLED    1
-#define ENABLE LOW                // 8825 stepper motor enable is active low
-#define DISABLE HIGH              // 8825 stepper motor disable is active high
 
-#define MMU2_VERSION "3.01  10/03/18"
-
-#define STEPSPERMM  144           // these are the number of steps required to travel 1 mm using the extruder motor
+#define MMU2_VERSION "2.23  9/23/18"
 
 #define FW_VERSION 90             // config.h  (MM-control-01 firmware)
 #define FW_BUILDNR 85             // config.h  (MM-control-01 firmware)
@@ -61,19 +51,19 @@ int command = 0;
 #define INACTIVE 0
 #define ACTIVE 1
 
-#define TOOLSYNC 5                         // number of tool change (T) commands before a selector resync is necessary
+#define CSDISTANCE 368
 
+//#define POSITION1   0              // position for the color selector stepper motor 
+//#define POSITION2   CSDISTANCE
+//#define POSITION3   CSDISTANCE*2
+//#define POSITION4   CSDISTANCE*3
+//#define POSITION5   CSDISTANCE*4
 
 //#define BEARINGSTEPSIZE 24         // steps to each roller bearing
 float bearingAbsPos[5] = {1, 24, 48, 72, 96}; // absolute position of roller bearing stepper motor
                                                     // changed position #2 to 372  (still tuning this little sucker
-
-
-#define CSSTEPS 357                        //                                                 
-int selectorAbsPos[5] = {0,CSSTEPS*1,CSSTEPS*2,CSSTEPS*3,CSSTEPS*4};  // absolute position of selector stepper motor
-
-
-int trackToolChanges = 0;
+                                                    //  
+int selectorAbsPos[5] = {0,372,368*2,368*3,368*4};  // absolute position of selector stepper motor
 
 int currentCSPosition = 0;         // color selector position
 int currentPosition = 0;
@@ -82,53 +72,49 @@ int currentPosition = 0;
 int oldBearingPosition = 0;      // this tracks the roller bearing position (top motor on the MMU)
 int filamentSelection = 0;       // keep track of filament selection (0,1,2,3,4))
 int dummy[100];
-char currentExtruder = '0';
+char currentExtruder = "0";
 
 int firstTimeFlag = 0;
 int earlyCommands = 0;           // forcing communications with the mk3 at startup
-
-int toolChangeCount = 0;
 
 char receivedChar;
 boolean newData = false;
 int rollerStatus = INACTIVE;
 int colorSelectorStatus = INACTIVE;
 
+//String kbString;
 
 #define BEARINGMOTORDELAY 1000      // 2,000 useconds  (idler motor)
-#define EXTRUDERMOTORDELAY 60     // 150 useconds    (controls filament feed speed to the printer)
-#define COLORSELECTORMOTORDELAY 50 // 50 useconds
-
-// modified code on 10.2.18 to accomodate RAMPS 1.6 board mapping
-//
-byte idlerDirPin = A7;
-byte idlerStepPin = A6;
-byte idlerEnablePin = A2;
+#define EXTRUDERMOTORDELAY 150     // 400 useconds    (controls filament feed speed to the printer)
+#define COLORSELECTORMOTORDELAY 50 // 200 useconds
 
 
+byte bearingDirPin = 9;
+byte bearingStepPin = 8;
+byte bearingSleepPin = 2;
+//byte bearingRstPin = 3;
 
-byte extruderDirPin = 48;     //  pin 5 for extruder motor direction pin
-byte extruderStepPin = 46;   //  pin 4 for extruder motor stepper motor pin
-byte extruderEnablePin = A8;    //  pin 6 for extruder motor rst/sleep motor pin
-
-byte colorSelectorDirPin = A1;    //color selector stepper motor (driven by trapezoidal screw)
-byte colorSelectorStepPin = A0;
-byte colorSelectorEnablePin = 38;
+//byte M0Pin = 12;
+//byte M1Pin = 11;
+//byte M2Pin = 10;
 
 
+byte extruderDirPin = 5;     //  pin 5 for extruder motor direction pin
+byte extruderStepPin = 4;   //  pin 4 for extruder motor stepper motor pin
+byte extruderSleepPin = 6;    //  pin 6 for extruder motor rst/sleep motor pin
 
-byte findaPin = A3;
+byte colorSelectorDirPin = 3;    //color selector stepper motor (driven by trapezoidal screw)
+byte colorSelectorStepPin = 7;
+byte colorSelectorSleepPin = 12;
 
-byte filamentSwitch = A5;       // this switch was added on 10.1.18 to help with filament loading
+
+
+byte findaPin = 13;
 
 
 //SoftwareSerial Serial1(10,11); // RX, TX (communicates with the MK3 controller board
 
-int f0Min = 1000, f1Min = 1000, f2Min = 1000, f3Min = 1000, f4Min = 1000;
-int f0Max, f1Max, f2Max, f3Max, f4Max = 0; 
-int f0Avg, f1Avg, f2Avg, f3Avg, f4Avg;
-int f0Distance, f1Distance, f2Distance, f3Distance, f4Distance = 0;
-int f0ToolChange, f1ToolChange, f2ToolChange, f3ToolChange, f4ToolChange = 0;
+
 
 
 void setup() {
@@ -171,29 +157,25 @@ void setup() {
 
   while (!Serial1.available()) {
 
-      //delay(100); 
-      Serial.println("Waiting for message from mk3");
-      delay(1000);
+      delay(100); 
   }
   Serial.println("inbound message from mk3");
-
+ 
 
  
 
-  pinMode(idlerDirPin, OUTPUT);
-  pinMode(idlerStepPin, OUTPUT);
+  pinMode(bearingDirPin, OUTPUT);
+  pinMode(bearingStepPin, OUTPUT);
 
   pinMode(findaPin, INPUT);                        // pinda Filament sensor 
-  pinMode(filamentSwitch, INPUT);
-  
-  pinMode(idlerEnablePin, OUTPUT);
+  pinMode(bearingSleepPin, OUTPUT);
   // pinMode(bearingRstPin, OUTPUT);
 
-  pinMode(extruderEnablePin, OUTPUT);
+  pinMode(extruderSleepPin, OUTPUT);
   pinMode(extruderDirPin, OUTPUT);
   pinMode(extruderStepPin, OUTPUT);
 
-  pinMode(colorSelectorEnablePin, OUTPUT);
+  pinMode(colorSelectorSleepPin, OUTPUT);
   pinMode(colorSelectorDirPin, OUTPUT);
   pinMode(colorSelectorStepPin, OUTPUT);
 
@@ -202,11 +184,11 @@ void setup() {
    
  
   
-  digitalWrite(idlerEnablePin, ENABLE);           // enable the roller bearing motor (motor #1)
+  digitalWrite(bearingSleepPin, HIGH);           // enable the roller bearing motor (motor #1)
   // digitalWrite(bearingRstPin, HIGH);
 
-  digitalWrite(extruderEnablePin, ENABLE);        //  enable the extruder motor  (motor #2)
-  digitalWrite(colorSelectorEnablePin, ENABLE);  // enable the color selector motor  (motor #3)
+  digitalWrite(extruderSleepPin, HIGH);        //  enable the extruder motor  (motor #2)
+  digitalWrite(colorSelectorSleepPin, HIGH);  // enable the color selector motor  (motor #3)
 
 
 
@@ -215,24 +197,23 @@ void setup() {
 // moved these inits to the loop() section since the mk3 serial interface needs to be handled
 //
 
-  if (isFilamentLoaded()) {               // check to see if filament in the bowden tube (between the mmu2 and mk3
-      Serial.println("Filament was in the bowden tube at startup, unloading filament automatically");
-      unloadFilamentToFinda();            // 
-  }
+  findaStatus = digitalRead(findaPin);    // check the pinda status ( DO NOT MOVE THE COLOR SELECTOR if filament is present)
   
-   Serial.println("Syncing the Filament Selector Assembly");
-   initColorSelectorPosition();   // reset the color selector if there is NO filament present
+  if (findaStatus == 0) {
+     initColorSelectorPosition();   // reset the color selector if there is NO filament present
     
+  } else {
+    Serial.println("Filament is in the selector, will not move the selector");  
+    Serial.println("Serious Problem, filament is present between the MMU2 and Extruder:  UNLOAD FILAMENT !!!");   
+  }
 
-   Serial.println("Syncing the Idler Selector Assembly");
-   initIdlerPosition();    // reset the roller bearing position
+   initBearingPosition();    // reset the roller bearing position
 
   
 
-}  // end of init() routine
+}
 
 
-// infinite loop - core of the program
 
 void loop() {
   int i;
@@ -240,31 +221,19 @@ void loop() {
   int pindaStatus;
   char c1, c2, c3;
   String kbString;
-  int fstatus;
-  
   
   // Serial.println("looping");
-  delay(100);                       // wait for 100 milliseconds
   checkSerialInterface();           // check the serial interface for input commands from the mk3
-#ifdef NOTDEF
-   while (1) {
-      fstatus = digitalRead(filamentSwitch);
-      Serial.print("Filament Status: ");
-      Serial.println(fstatus);
-      delay(1000);
-   }
-#endif
+  delay(100);                        // wait for 100 milliseconds
+
 
   // Serial.println("Enter Filament Selection (1-5),Disengage Roller (D), Load Filament (L), Unload Filament (U), Test Color Extruder(T)");
-    //Serial.print("FINDA status: ");
-    //fstatus = digitalRead(findaPin);   
-    //Serial.println(fstatus);
-    
+
 
   // check for keyboard input
 
   if (Serial.available()) {
-      Serial.print("Key was hit ");
+      Serial.print("Key was hit");
       //c1 = Serial.read();
       //c2 = Serial.read();
       //c3 = Serial.read();  
@@ -284,12 +253,6 @@ void loop() {
          toolChange(kbString[1]);                 // invoke the tool change command
          //toolChange(c2); 
       // processKeyboardInput();
-      }
-      if (kbString[0] == 'U') {
-         Serial.println("Processing 'U' Command");
-         unParkIdler();                    // turn on the idler motor
-         unloadFilamentToFinda();          //unload the filament
-         parkIdler();                      // turn off the idler motor
       }
   }
   
@@ -369,10 +332,10 @@ process_more_commands:  // parse the inbound command
                                             // request for filament unload
                  Serial.println("U: Filament Unload Selected");
                  if (rollerStatus == INACTIVE)
-                       unParkIdler();
+                       reActivateRollers();
                  if ((c2 >= '0') && (c2 <= '4')) {
                      unloadFilamentToFinda();
-                     parkIdler();
+                     deActivateRollers();
                      Serial.println("U: Sending Filament Unload Acknowledge to MK3");
                      delay(200);
                      Serial1.print("ok\n");
@@ -387,7 +350,7 @@ process_more_commands:  // parse the inbound command
                                                      // request for filament load
                  Serial.println("L: Filament Load Selected");
                  if (rollerStatus == INACTIVE)
-                        unParkIdler();
+                        reActivateRollers();
 
                   if (colorSelectorStatus == INACTIVE)
                        activateColorSelector();         // turn on the color selector motor
@@ -395,13 +358,13 @@ process_more_commands:  // parse the inbound command
                   if ((c2 >= '0') && (c2 <= '4')) {
                           
                           Serial.println("L: Moving the bearing idler");
-                          idlerSelector(c2);   // move the filament selector stepper motor to the right spot
+                          bearingSelector(c2);   // move the filament selector stepper motor to the right spot
                           Serial.println("L: Moving the color selector");
                           colorSelector(c2);     // move the color Selector stepper Motor to the right spot
                           Serial.println("L: Loading the Filament");
                           // loadFilament(CCW);
                           loadFilamentToFinda();
-                          parkIdler();             // turn off the idler roller
+                          deActivateRollers();             // turn off the idler roller
                           
                           Serial.println("L: Sending Filament Load Acknowledge to MK3");
 
@@ -475,12 +438,6 @@ process_more_commands:  // parse the inbound command
          Serial1.print("ok\n");
      
          break;
-     case 'F':                                         // 'F' command is acknowledged but no processing goes on at the moment
-                                                       // will be useful for flexible material down the road
-         Serial.println("Filament Type Selected: ");
-         Serial.println(c2);
-         Serial1.print("ok\n");                        // send back OK to the mk3
-         break;
      default:
          Serial.print("ERROR: unrecognized command from the MK3 controller");
          Serial1.print("ok\n");
@@ -523,7 +480,7 @@ loop:
     goto loop;
   }
 
-  digitalWrite(colorSelectorEnablePin, ENABLE );    // turn on the color selector motor
+  digitalWrite(colorSelectorSleepPin, HIGH );    // turn on the color selector motor
 
 
   switch (selection) {
@@ -568,7 +525,7 @@ loop:
       break;
 
   }
-  digitalWrite(colorSelectorEnablePin, DISABLE);    // turn off the color selector motor
+  digitalWrite(colorSelectorSleepPin, LOW);    // turn off the color selector motor
 
 
 }  // end of colorSelector routine()
@@ -604,9 +561,9 @@ void completeRevolution() {
   int i, delayValue;
 
   for (i = 0; i < STEPSPERREVOLUTION * STEPSIZE; i++) {
-    digitalWrite(idlerStepPin, HIGH);
+    digitalWrite(bearingStepPin, HIGH);
     delayMicroseconds(10);               // delay for 10 useconds
-    digitalWrite(idlerStepPin, LOW);
+    digitalWrite(bearingStepPin, LOW);
     delayMicroseconds(10);               // delay for 10 useconds
 
     delayMicroseconds(BEARINGMOTORDELAY);
@@ -624,16 +581,16 @@ void bearingTurnAmount(int steps, int dir) {
   int delayValue;
 
 
-  digitalWrite(idlerEnablePin, ENABLE);   // turn on motor 
+  digitalWrite(bearingSleepPin, HIGH);   // turn on motor 
   
   // digitalWrite(ledPin, HIGH);
 
-  digitalWrite(idlerDirPin, dir);
+  digitalWrite(bearingDirPin, dir);
 
   for (i = 0; i < steps * STEPSIZE; i++) {
-    digitalWrite(idlerStepPin, HIGH);
+    digitalWrite(bearingStepPin, HIGH);
     delayMicroseconds(10);               // delay for 10 useconds
-    digitalWrite(idlerStepPin, LOW);
+    digitalWrite(bearingStepPin, LOW);
     delayMicroseconds(10);               // delay for 10 useconds
 
     delayMicroseconds(BEARINGMOTORDELAY);
@@ -658,17 +615,9 @@ void loadFilamentToFinda() {
 
 loop:
       currentTime = millis();
-      if ((currentTime-startTime) > 10000) {           // 15 seconds worth of trying to unload the filament
-          Serial.println("loadFilamentToFinda() ERROR: Timeout occurred, Filament is not loading to FINDA sensor");
-          Serial.println("loadFilamentToFinda()        Fix the issue and then hit any key to continue");
-          parkIdler();                               // disengge the idler 
-          while (!Serial.available()) {  // wait for keyboard entry
-               
-                     
-          }
-          unParkIdler();          // re-engage the idler
-          startTime = millis();   // reset the start time clock
-          Serial.readString();   // clear the serial buffer
+      if ((currentTime-startTime) > 15000) {           // 15 seconds worth of trying to unload the filament
+          Serial.println("loadFilamentToFinda() ERROR: Timeout occurred, Filament is not loading");
+          return;         
       }
       feedFilament(1);        // 1 step and then check the pinda status
 
@@ -716,7 +665,6 @@ loop:
               // wait until key is hit
 
           }
-          Serial.readString();     // clear the serial input
           startTime = millis();   // reset the start time      
       }
       
@@ -732,12 +680,11 @@ loop:
       Serial.println("unloadFilamenttoFinda(): Pinda Sensor Triggered during Filament unload");
 #endif
       //
-      // for a filament unload ... need to get the filament out of the selector head !!!
+      // for a filament load ... need to get the filament out of the selector head !!!
       // 
       digitalWrite(extruderDirPin, CW);   // back the filament away from the selector
-      steps = 200 * STEPSIZE + 50;       
+      steps = 200 * STEPSIZE + 40;       
       feedFilament(steps);    // 
-      
 #ifdef NOTDEF
       Serial.println("unloadFilamentToFinda(): Unloading Filament Complete ...");
 #endif
@@ -766,7 +713,6 @@ loop:
         goto loop;
       Serial.println("Pinda Sensor Triggered");
       // now feed the filament ALL the way to the printer extruder assembly
-      
       steps = 17 * 200 * STEPSIZE;
 
       Serial.print("steps: ");
@@ -811,9 +757,9 @@ void feedFilament(unsigned int steps) {
   // for (i = 0; i < 200*STEPSIZE; i++) {
   for (i = 0; i <= steps; i++) {
     digitalWrite(extruderStepPin, HIGH);
-    delayMicroseconds(10);               // delay for 10 useconds
+    delayMicroseconds(10);               // delay for 400 useconds
     digitalWrite(extruderStepPin, LOW);
-    delayMicroseconds(10);               // delay for 10 useconds
+    delayMicroseconds(10);               // delay for 400 useconds
     // delayValue = 32/stepSize;
     //delayValue = 1;
     delayMicroseconds(EXTRUDERMOTORDELAY);         // wait for 400 useconds
@@ -829,19 +775,19 @@ void recoverfilamentSelector() {
 
 // this routine drives the 5 position bearings (aka idler) on the top of the MMU2 carriage
 //
-void idlerSelector(char filament) {
+void bearingSelector(char filament) {
   int steps;
   int newBearingPosition;
   int newSetting;
 
 #ifdef NOTDEF
-  Serial.print("idlerSelector(): Filament Selected: ");
+  Serial.print("bearingSelector(): Filament Selected: ");
   Serial.println(filament);
 #endif  
 
   if ((filament < '0') || (filament > '4')) {
-       Serial.println("idlerSelector() ERROR, invalid filament selection");
-       Serial.print("idlerSelector() filament: ");
+       Serial.println("bearingSelector() ERROR, invalid filament selection");
+       Serial.print("bearingSelector() filament: ");
        Serial.println(filament);
        return;
   }
@@ -880,7 +826,7 @@ void idlerSelector(char filament) {
       currentExtruder = '4';
       break;
     default:
-      Serial.println("idlerSelector(): ERROR, Invalid Idler Bearing Position");
+      Serial.println("bearingSelector(): ERROR, Invalid Idler Bearing Position");
       break;
   }
 
@@ -910,17 +856,16 @@ void idlerSelector(char filament) {
 
 // perform this function only at power up/reset
 //
-void initIdlerPosition() {
-  
+void initBearingPosition() {
   Serial.println("initBearingPosition(): resetting the Idler Roller Bearing position");
-  digitalWrite(idlerEnablePin, ENABLE);   // turn on the roller bearing motor
+  digitalWrite(bearingSleepPin, HIGH);   // turn on the roller bearing motor
   oldBearingPosition = 125;                // points to position #1
   bearingTurnAmount(MAXROLLERTRAVEL, CW);                 
   bearingTurnAmount(MAXROLLERTRAVEL, CCW);                // move the bearings out of the way
-  digitalWrite(idlerEnablePin, DISABLE);   // turn off the idler roller bearing motor
+  digitalWrite(bearingSleepPin, LOW);   // turn off the idler roller bearing motor
 
    filamentSelection = 0;       // keep track of filament selection (0,1,2,3,4))
-   currentExtruder = '0';
+   currentExtruder = "0";
 
 
 }
@@ -928,12 +873,12 @@ void initIdlerPosition() {
 // perform this function only at power up/reset
 //
 void initColorSelectorPosition() {
-  Serial.println("resetting the Color Selector position");
-  digitalWrite(colorSelectorEnablePin, ENABLE);   // turn on the stepper motor
+  Serial.println("resettng the Color Selector position");
+  digitalWrite(colorSelectorSleepPin, HIGH);   // turn on the stepper motor
   csTurnAmount(1900, CW);             // move to the right
   csTurnAmount(1920, CCW);        // move all the way to the left
   
-  digitalWrite(colorSelectorEnablePin, DISABLE);   // turn off the stepper motor
+  digitalWrite(colorSelectorSleepPin, LOW);   // turn off the stepper motor
 
 }
 
@@ -941,7 +886,7 @@ void initColorSelectorPosition() {
 //
 void activateRollers() {
 
-  digitalWrite(idlerEnablePin, ENABLE);   // turn on the roller bearing stepper motor
+  digitalWrite(bearingSleepPin, HIGH);   // turn on the roller bearing stepper motor
 
   // turnAmount(120, CW);   // move the rollers to filament position #1
   // oldBearingPosition = 45;  // filament position #1
@@ -953,7 +898,7 @@ void activateRollers() {
 
 // move the filament Roller pulleys away from the filament
 
-void parkIdler() {
+void deActivateRollers() {
   int newSetting;
 
   oldBearingPosition = bearingAbsPos[filamentSelection];          // fetch the bearing position based on the filament state
@@ -972,23 +917,23 @@ void parkIdler() {
   bearingTurnAmount(newSetting, CCW);     // move the bearing roller out of the way
   oldBearingPosition = MAXROLLERTRAVEL;   // record the current roller status  (CSK)
   rollerStatus = INACTIVE;
-  digitalWrite(idlerEnablePin, DISABLE);    // turn off the roller bearing stepper motor  (nice to do, cuts down on CURRENT utilization)
+  digitalWrite(bearingSleepPin, LOW);    // turn off the roller bearing stepper motor  (nice to do, cuts down on CURRENT utilization)
 
 }
 
 
 // turn on the bearing rollers
 
-void unParkIdler() {
+void reActivateRollers() {
   int rollerSetting;
 
-  digitalWrite(idlerEnablePin, ENABLE);   // turn on the roller bearing motor
+  digitalWrite(bearingSleepPin, HIGH);   // turn on the roller bearing motor
 
   Serial.println("Activating the Bearing Rollers");
 
   rollerSetting = MAXROLLERTRAVEL - bearingAbsPos[filamentSelection];
 
-  Serial.print("unParkIdler() Roller Setting: ");
+  Serial.print("reActivateRollers() Roller Setting: ");
   Serial.println(rollerSetting);
 
   bearingTurnAmount(rollerSetting, CW);    // restore the old position
@@ -998,12 +943,12 @@ void unParkIdler() {
 void deActivateColorSelector() {
   int newSetting;
 
-  digitalWrite(colorSelectorEnablePin, DISABLE);    // turn off the color selector stepper motor  (nice to do, cuts down on CURRENT utilization)
+  digitalWrite(colorSelectorSleepPin, LOW);    // turn off the color selector stepper motor  (nice to do, cuts down on CURRENT utilization)
   colorSelectorStatus = INACTIVE;
 }
 
 void activateColorSelector() {
-  digitalWrite(colorSelectorEnablePin, ENABLE);
+  digitalWrite(colorSelectorSleepPin, HIGH);
   colorSelectorStatus = ACTIVE;
 }
 
@@ -1052,28 +997,28 @@ void processKeyboardInput() {
         activateColorSelector();         // turn on the color selector motor
 
 
-      idlerSelector(receivedChar);   // move the filament selector stepper motor to the right spot
+      bearingSelector(receivedChar);   // move the filament selector stepper motor to the right spot
       colorSelector(receivedChar);     // move the color Selector stepper Motor to the right spot
 
       break;
     case 'd':                             // de-active the bearing roller stepper motor and color selector stepper motor
     case 'D':
-      parkIdler();
+      deActivateRollers();
       deActivateColorSelector();
       break;
     case 'l':                            // start the load process for the filament
     case 'L':
-      // unParkIdler();
+      // reActivateRollers();
       if (rollerStatus == INACTIVE)
-        unParkIdler();
+        reActivateRollers();
       loadFilament(CCW);
-      parkIdler();          // move the bearing rollers out of the way after a load is complete
+      deActivateRollers();          // move the bearing rollers out of the way after a load is complete
       break;
     case 'u':                           // unload the filament from the MMU2 device
     case 'U':
-      unParkIdler();           // working on this command
+      reActivateRollers();           // working on this command
       loadFilament(CW);
-      parkIdler();         // after the unload of the filament, move the bearing rollers out of the way
+      deActivateRollers();         // after the unload of the filament, move the bearing rollers out of the way
       break;
     case 't':
     case 'T':
@@ -1091,11 +1036,6 @@ void filamentLoadToExtruder() {
      float fsteps;
      unsigned int steps;
      int findaStatus;
-     int flag;
-     int filamentDistance;
-     int fStatus;
-     int startTime, currentTime;
-     
                         
                         if ((currentExtruder < '0')  || (currentExtruder > '4')) {
                             Serial.println("filamentLoadToExtruder(): fixing current extruder variable");
@@ -1103,11 +1043,11 @@ void filamentLoadToExtruder() {
                         }
 #ifdef DEBUG
                         Serial.println("Attempting to move Filament to Print Head Extruder Bondtech Gears");
-                        //unParkIdler();
+                        //reActivateRollers();
                         Serial.print("filamentLoadToExtruder():  currentExtruder: ");
                         Serial.println(currentExtruder);
 #endif
-                        idlerSelector(currentExtruder);        // this was not done properly before
+                        bearingSelector(currentExtruder);        // this was not done properly before
                         
                         deActivateColorSelector();
                         //if (rollerStatus == INACTIVE) {
@@ -1120,114 +1060,12 @@ loop:
                         findaStatus = digitalRead(findaPin);
                         if (findaStatus == 0)              // keep feeding the filament until the pinda sensor triggers
                         goto loop;
-
-                        // Serial.println("filamentLoadToExtruder(): Pinda Sensor Triggered during Filament Load");
-
-                        startTime = millis();
-                        flag = 0;
-                        filamentDistance = 0;
-                        // wait until the filament sensor on the mk3 triggers
-                        while (flag == 0) {
-//loop2:
-                              currentTime = millis();
-                              if ((currentTime-startTime) > 15000) { // only wait for 10 seconds
-                                  Serial.println("ERROR: filament load issue between finda and switch");
-                                  // probably should wait for keyboard hit at this point
-                                  parkIdler();                  // disengage the idler to fix the filament issue
-                                  while (!Serial.available()) {
-                                         
-                                        // wait for key to be hit
-                                  }
-                                  unParkIdler();                // re-engage the idler after keyboard entry
-                                  
-                                  // need to clear the keyboard buffer
-                                  Serial.readString();          // clear the keyboard buffer
-                                  
-                                  startTime = millis();         // reset the start Time
- //                                 goto loop2;
-                              }
-                              
-                              feedFilament(STEPSPERMM);        // step forward 1 mm
-                              filamentDistance++;
-                              fStatus = digitalRead(filamentSwitch);             // read the filament switch on the mk3 extruder
-                              if (fStatus == 0) {
-                                   // Serial.println("filament switch triggered");
-                                   flag = 1;
-                                   Serial.print("Filament distance traveled (mm): ");
-                                   Serial.println(filamentDistance);
-                                  
-                                   switch(filamentSelection) {
-                                       case 0:
-                                             if (filamentDistance < f0Min) {
-                                                  f0Min = filamentDistance;
-                                             }
-                                             if (filamentDistance > f0Max) {
-                                                  f0Max = filamentDistance;
-                                             }
-                                             f0Distance += filamentDistance;
-                                             f0ToolChange++;
-                                             f0Avg = f0Distance/f0ToolChange;
-                                             break;
-                                       case 1:
-                                            if (filamentDistance < f1Min) {
-                                                  f1Min = filamentDistance;
-                                             }
-                                             if (filamentDistance > f1Max) {
-                                                  f1Max = filamentDistance;
-                                             }
-                                             f1Distance += filamentDistance;
-                                             f1ToolChange++;
-                                             f1Avg = f1Distance/f1ToolChange;
-                                             break;
-                                             
-                                       case 2:
-                                             if (filamentDistance < f2Min) {
-                                                  f2Min = filamentDistance;
-                                             }
-                                             if (filamentDistance > f2Max) {
-                                                  f2Max = filamentDistance;
-                                             }
-                                             f2Distance += filamentDistance;
-                                             f2ToolChange++;
-                                             f2Avg = f2Distance/f2ToolChange;
-                                             break;                                      
-                                       case 3:
-                                             if (filamentDistance < f3Min) {
-                                                  f3Min = filamentDistance;
-                                             }
-                                             if (filamentDistance > f3Max) {
-                                                  f3Max = filamentDistance;
-                                             }
-                                             f3Distance += filamentDistance;
-                                             f3ToolChange++;
-                                             f3Avg = f3Distance/f3ToolChange;
-                                             break;                                      
-                                       case 4:
-                                             if (filamentDistance < f4Min) {
-                                                  f4Min = filamentDistance;
-                                             }
-                                             if (filamentDistance > f1Max) {
-                                                  f4Max = filamentDistance;
-                                             }
-                                             f4Distance += filamentDistance;
-                                             f4ToolChange++;
-                                             f4Avg = f4Distance/f4ToolChange;
-                                             break;                                      
-                                       default:
-                                             Serial.println("Error, Invalid Filament Selection");
-                                             
-                                   }
-                                   printFilamentStats();
-                                   
-                              }
-                        }
-                        // go an additional 31mm 
-                        feedFilament(STEPSPERMM*31);
-                        
+#ifdef DEBUG
+                        Serial.println("filamentLoadToExtruder(): Pinda Sensor Triggered during Filament Load");
+#endif
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //  STEPS FROM MMU2 to EXTRUDER HEADER (bondtech gear)
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef NOTDEF
                         fsteps = 200 * STEPSIZE * 18.7
                         ;    // modifed from 19.5 to 20.0 after additional testing 
 #ifdef DEBUG  
@@ -1236,54 +1074,13 @@ loop:
 #endif
                         steps = fsteps;
                         feedFilament(steps);    // 
-                        parkIdler();    // turn OFF the idler rollers when filament is loaded
+                        deActivateRollers();    // turn OFF the idler rollers when filament is loaded
 #ifdef DEBUG                        
                         Serial.println("filamentLoadToExtruder(): Loading Filament to Print Head Complete");
 #endif
-
-#endif
-                        parkIdler();              // park the IDLER (bearing) motor     
                         delay(200);
                         Serial1.print("ok\n");    // send back acknowledge to the mk3 controller
                         
-}
-
-void printFilamentStats() {
-      Serial.print("F0 Min: ");
-      Serial.print(f0Min);
-      Serial.print("  F0 Max: ");
-      Serial.print(f0Max);
-      Serial.print("  F0 Avg: ");
-      Serial.println(f0Avg);
-
-      Serial.print("F1 Min: ");
-      Serial.print(f1Min);
-      Serial.print("  F1 Max: ");
-      Serial.print(f1Max);
-      Serial.print("  F1 Avg: ");
-      Serial.println(f1Avg);
-
-      Serial.print("F2 Min: ");
-      Serial.print(f2Min);
-      Serial.print("  F2 Max: ");
-      Serial.print(f2Max);
-      Serial.print("  F2 Avg: ");
-      Serial.println(f2Avg);
-
-      Serial.print("F3 Min: ");
-      Serial.print(f3Min);
-      Serial.print("  F3 Max: ");
-      Serial.print(f3Max);
-      Serial.print("  F3 Avg: ");
-      Serial.println(f3Avg);
-
-      Serial.print("F4 Min: ");
-      Serial.print(f4Min);
-      Serial.print("  F4 Max: ");
-      Serial.print(f4Max);
-      Serial.print("  F4 Avg: ");
-      Serial.println(f4Avg);
-      
 }
 
 int isFilamentLoaded() {
@@ -1293,18 +1090,10 @@ int isFilamentLoaded() {
           return(findaStatus);
 }
 
-//
-// (T) Tool Change Command - this command is the core command used my the mk3 to drive the mmu2 filament selection
+// (T) Tool Change Command
 // 
 void toolChange(char selection) {
      int newExtruder;
-     
-                          ++toolChangeCount;                             // count the number of tool changes
-                          ++trackToolChanges;
-
-                          Serial.print("Tool Change Count: ");
-                          Serial.println(toolChangeCount);
-                          
                             
                           newExtruder = selection - 0x30;                // convert ASCII to a number (0-4)
                         
@@ -1312,14 +1101,14 @@ void toolChange(char selection) {
 
                                if (!isFilamentLoaded) {            // no filament loaded
 
-                                     idlerSelector(selection);   // move the filament selector stepper motor to the right spot
+                                     bearingSelector(selection);   // move the filament selector stepper motor to the right spot
                                      colorSelector(selection);     // move the color Selector stepper Motor to the right spot
                                      filamentLoadToExtruder();
                                      //loadFilamentToFinda();
                                }
 //                               else {                           // added on 9.24.18 to
 //                                     Serial.println("Filament already loaded, unloading the filament");
-//                                     idlerSelector(selection);
+//                                     bearingSelector(selection);
 //                                     unloadFilamentToFinda();
 //                               }
                                 
@@ -1327,17 +1116,12 @@ void toolChange(char selection) {
 
                                 if (isFilamentLoaded) {
 
-                                      idlerSelector(currentExtruder);  
+                                      bearingSelector(currentExtruder);  
                                       unloadFilamentToFinda();          // have to unload the filament first
                                 }  
 
                                // a little tricky since I need to select the proper idler bearing
-                               idlerSelector(selection); 
-                               if (trackToolChanges > TOOLSYNC) {             // currently set to 5,  can be greater than 30 after debug
-                                   Serial.println("Synchronizing the Filament Selector Head");
-                                   colorSelector(1);  
-                                   trackToolChanges = 0;                                                 
-                               }
+                               bearingSelector(selection);                                                    
                                colorSelector(selection);
                                filamentLoadToExtruder();
                                //loadFilamentToFinda();
@@ -1368,7 +1152,7 @@ void toolChange(char selection) {
                             currentExtruder = '0';
                         }
 
-                        idlerSelector(currentExtruder);        // this was not done properly before                        
+                        bearingSelector(currentExtruder);        // this was not done properly before                        
                         deActivateColorSelector();
 
                         // probably should slow down the extruder motor in the MMU2 to feed the bondtech better
@@ -1403,20 +1187,18 @@ void toolChange(char selection) {
                                         digitalWrite(extruderStepPin, HIGH);
                                         delayMicroseconds(10);               // delay for 10 useconds
                                         digitalWrite(extruderStepPin, LOW);
-                                        //delayMicroseconds(2600);             // originally 2600
-                                        delayMicroseconds(800);              // speed up by a factor of 3
+                                        delayMicroseconds(2600);
                                         
                         }
                         for (i = 0; i <= 450; i++) {
                                         digitalWrite(extruderStepPin, HIGH);
                                         delayMicroseconds(10);               // delay for 10 useconds
                                         digitalWrite(extruderStepPin, LOW);
-                                        // delayMicroseconds(2200);            // originally 2200
-                                        delayMicroseconds(800);             // speed up by a factor of 3                         
+                                        delayMicroseconds(2200);                             
                         }
 
  
-                        parkIdler();    // turn OFF the idler rollers when filament is loaded
+                        deActivateRollers();    // turn OFF the idler rollers when filament is loaded
 #ifdef DEBUG                        
                         Serial.println("filamentLoadToExtruder(): Loading Filament to Print Head Complete");
 #endif
@@ -1424,4 +1206,4 @@ void toolChange(char selection) {
                         Serial1.print("ok\n");    // send back acknowledge to the mk3 controller
                         
   
-} // end of filamentLoad with BondTechGear() routine
+ } // end of filamentLoad with BondTechGear() routine
