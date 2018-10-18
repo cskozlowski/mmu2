@@ -170,29 +170,29 @@ int colorSelectorStatus = INACTIVE;
 
 
 // added this pin as a debug pin (lights a green LED so I can see the 'C0' command in action
-byte greenLED = 14;
+#define greenLED 14
 
 // modified code on 10.2.18 to accomodate RAMPS 1.6 board mapping
 //
-byte idlerDirPin = A7;
-byte idlerStepPin = A6;
-byte idlerEnablePin = A2;
+#define idlerDirPin		A7
+#define idlerStepPin	A6
+#define idlerEnablePin	A2
 
 
 
-byte extruderDirPin = 48;     //  pin 48 for extruder motor direction pin
-byte extruderStepPin = 46;   //  pin 48 for extruder motor stepper motor pin
-byte extruderEnablePin = A8;    //  pin A8 for extruder motor rst/sleep motor pin
+#define extruderDirPin		48 //  pin 48 for extruder motor direction pin
+#define extruderStepPin		46 //  pin 48 for extruder motor stepper motor pin
+#define extruderEnablePin	A8 //  pin A8 for extruder motor rst/sleep motor pin
 
-byte colorSelectorDirPin = A1;    //color selector stepper motor (driven by trapezoidal screw)
-byte colorSelectorStepPin = A0;
-byte colorSelectorEnablePin = 38;
+#define colorSelectorDirPin		A1 //color selector stepper motor (driven by trapezoidal screw)
+#define colorSelectorStepPin	A0
+#define colorSelectorEnablePin	38
 
 
 
-byte findaPin = A3;
+#define findaPin  A3
 // this is pin D3 on the arduino MEGA 2650
-byte filamentSwitch = 3;       // this switch was added on 10.1.18 to help with filament loading (X- signal on the RAMPS board)
+#define filamentSwitch 3       // this switch was added on 10.1.18 to help with filament loading (X- signal on the RAMPS board)
 
 
 //SoftwareSerial Serial1(10,11); // RX, TX (communicates with the MK3 controller board
