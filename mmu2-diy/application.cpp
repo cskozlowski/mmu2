@@ -37,6 +37,27 @@
 #include <stdarg.h>
 #include "application.h"
 
+
+
+static int isFilamentLoaded();
+static void initIdlerPosition();
+static void checkSerialInterface();
+static void initColorSelector();
+static void filamentLoadWithBondTechGear();
+static void toolChange( char selection);
+static void quickUnParkIdler();
+static void unParkIdler();
+static void unloadFilamentToFinda();
+static void parkIdler();
+static void activateColorSelector();
+static void idlerSelector(char filament);
+static void colorSelector(char selection);
+static void loadFilamentToFinda();
+static void fixTheProblem(String statement);
+static void csTurnAmount(int steps, int direction);
+static void feedFilament(unsigned int steps);
+
+
 #define SERIAL1ENABLED    1
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high

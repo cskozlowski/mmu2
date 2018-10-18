@@ -8,6 +8,6 @@ void setup(){
 	app.setup();
 }
 
-void run(){
+void loop(){
 	app.loop();
 }
