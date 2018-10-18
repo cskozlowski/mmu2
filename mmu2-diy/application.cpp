@@ -240,7 +240,7 @@ void Application::setup() {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// THIS NEXT COMMAND IS CRITICAL ... IT TELLS THE MK3 controller that an MMU is present
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	Serial1.print("start\n");                 // attempt to tell the mk3 that the mmu is present
+	Serial1.print(F("start\n"));                 // attempt to tell the mk3 that the mmu is present
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//  check the serial interface to see if it is active
@@ -456,7 +456,7 @@ process_more_commands:  // parse the inbound command
 			}
 
 			// delay(200);                      //removed this 200msec delay on 10.5.18
-			Serial1.print("ok\n");              // send command acknowledge back to mk3 controller
+			Serial1.print(F("ok\n"));              // send command acknowledge back to mk3 controller
 			time5 = millis();          // grab the current time
 			break;
 		case 'C':
@@ -467,7 +467,7 @@ process_more_commands:  // parse the inbound command
 			// filamentLoadToMK3();
 			filamentLoadWithBondTechGear();
 			// delay(200);
-			Serial1.print("ok\n");
+			Serial1.print(F("ok\n"));
 			break;
 
 		case 'U':
@@ -491,12 +491,12 @@ process_more_commands:  // parse the inbound command
 				parkIdler();
 				Serial.println(F("U: Sending Filament Unload Acknowledge to MK3"));
 				delay(200);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 
 			} else {
 				Serial.println(F("U: Invalid filament Unload Requested"));
 				delay(200);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 			}
 			break;
 		case 'L':
@@ -528,7 +528,7 @@ process_more_commands:  // parse the inbound command
 
 				delay(200);
 
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 
 
 
@@ -545,7 +545,7 @@ process_more_commands:  // parse the inbound command
 			if (command == 1) {
 				Serial.println(F("S: Processing S2"));
 				Serial1.print(FW_BUILDNR);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 
 				command++;
 
@@ -553,7 +553,7 @@ process_more_commands:  // parse the inbound command
 			if (command == 0) {
 				Serial.println(F("S: Processing S1"));
 				Serial1.print(FW_VERSION);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 
 				command++;
 			}
@@ -562,18 +562,18 @@ process_more_commands:  // parse the inbound command
 			switch (c2) {
 			case '0':
 				Serial.println(F("S: Sending back OK to MK3"));
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 				break;
 			case '1':
 				Serial.println(F("S: FW Version Request"));
 				Serial1.print(FW_VERSION);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 				break;
 			case '2':
 				Serial.println(F("S: Build Number Request"));
 				Serial.println(F("Initial Communication with MK3 Controller: Successful"));
 				Serial1.print(FW_BUILDNR);
-				Serial1.print("ok\n");
+				Serial1.print(F("ok\n"));
 				break;
 			default:
 				Serial.println(F("S: Unable to process S Command"));
@@ -587,24 +587,24 @@ process_more_commands:  // parse the inbound command
 			findaStatus = digitalRead(findaPin);
 			if (findaStatus == 0) {
 				// Serial.println(F("P: FINDA INACTIVE"));
-				Serial1.print("0");
+				Serial1.print(F("0"));
 			}
 			else {
 				// Serial.println(F("P: FINDA ACTIVE"));
-				Serial1.print("1");
+				Serial1.print(F("1"));
 			}
-			Serial1.print("ok\n");
+			Serial1.print(F("ok\n"));
 
 			break;
 		case 'F':                                         // 'F' command is acknowledged but no processing goes on at the moment
 			// will be useful for flexible material down the road
 			Serial.println(F("Filament Type Selected: "));
 			Serial.println(c2);
-			Serial1.print("ok\n");                        // send back OK to the mk3
+			Serial1.print(F("ok\n"));                        // send back OK to the mk3
 			break;
 		default:
 			Serial.print(F("ERROR: unrecognized command from the MK3 controller"));
-			Serial1.print("ok\n");
+			Serial1.print(F("ok\n"));
 
 
 		}  // end of switch statement
@@ -1772,7 +1772,7 @@ loop1:
 	// parkIdler();              // park the IDLER (bearing) motor
 
 	//delay(200);             // removed on 10.5.18
-	//Serial1.print("ok\n");    // send back acknowledge to the mk3 controller (removed on 10.5.18)
+	//Serial1.print(F("ok\n"));    // send back acknowledge to the mk3 controller (removed on 10.5.18)
 
 }
 
