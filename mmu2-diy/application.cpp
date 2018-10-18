@@ -2182,5 +2182,5 @@ void filamentLoadWithBondTechGear() {
 
 Application::Application()
 {
-
+	// nothing to do in the constructor
 }
