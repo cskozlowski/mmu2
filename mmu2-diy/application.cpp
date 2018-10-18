@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-
+#include "application.h"
 
 #define SERIAL1ENABLED    1
 #define ENABLE LOW                // 8825 stepper motor enable is active low
@@ -186,7 +186,7 @@ unsigned long time0, time1, time2, time3, time4, time5;
 unsigned long timeCStart, timeCEnd;
 
 
-void setup() {
+void Application::setup() {
   // static int findaStatus;
 
   int waitCount;
@@ -304,7 +304,7 @@ continue_processing:
 
 // infinite loop - core of the program
 
-void loop() {
+void Application::loop() {
   int i;
   char rcvChar;
   int pindaStatus;
@@ -2156,5 +2156,10 @@ void filamentLoadWithBondTechGear() {
 #ifdef DEBUG
   Serial.println("filamentLoadToMK3(): Loading Filament to Print Head Complete");
 #endif
+
+}
+
+Application::Application()
+{
 
 }
