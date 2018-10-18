@@ -34,7 +34,7 @@
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high
 
-#define MMU2_VERSION "3.4  10/09/18"
+#define MMU2_VERSION "4.1  10/12/18"
 
 #define STEPSPERMM  144           // these are the number of steps required to travel 1 mm using the extruder motor
 
@@ -1380,8 +1380,9 @@ void filamentLoadToExtruder() {
   deActivateColorSelector();
 
 
-  digitalWrite(extruderDirPin, CCW);
+  digitalWrite(extruderDirPin, CCW);      // set extruder stepper motor to push filament towards the mk3
   startTime = millis();
+  
 loop:
   // feedFilament(1);        // 1 step and then check the pinda status
   feedFilament(STEPSPERMM);  // feed 1 mm of filament into the bowden tube
@@ -1391,13 +1392,25 @@ loop:
 
   // added this timeout feature on 10.4.18 (2 second timeout)
   if ((currentTime - startTime) > 2000) {
-    fixTheProblem("FILAMENT LOAD ERROR:  Filament not detected by FINSA sensor, check the selector head in the MMU2");    
+    fixTheProblem("FILAMENT LOAD ERROR:  Filament not detected by FINDA sensor, check the selector head in the MMU2");    
 
     startTime = millis();
   }
   if (findaStatus == 0)              // keep feeding the filament until the pinda sensor triggers
     goto loop;
+//***************************************************************************************************
+//* added additional check (10.10.18) - if the filament switch is already set this might mean there is a switch error or a clog
+//*       this error condition can result in 'air printing' 
+//***************************************************************************************************************************
+loop1:
+  fStatus = digitalRead(filamentSwitch);   
+  if (fStatus == 0) {                    // switch is active (this is not a good condition)
+      fixTheProblem("FILAMENT LOAD ERROR: Filament Switch in the MK3 is active (see the RED LED), it is either stuck open or there is debris");
+      goto loop1;
+  }
 
+
+  
   //Serial.println("filamentLoadToExtruder(): Pinda Sensor Triggered during Filament Load");
   // now loading from the FINDA sensor all the way down to the NEW filament sensor
 
@@ -1413,7 +1426,7 @@ loop:
   flag = 0;
   //filamentDistance = 0;
 
-  // wait until the filament sensor on the mk3 extruder triggers
+  // wait until the filament sensor on the mk3 extruder head (microswitch) triggers
   while (flag == 0) {
 
     currentTime = millis();
