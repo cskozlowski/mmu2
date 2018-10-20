@@ -40,8 +40,8 @@ This is a starter list of stuff you will need to complete this MMU2 home brew cl
             
   Get a motor with a minimum of 45 N-cm of stall torque (you will thank me later)
          
-    These motors are nice and cheap - the problem with cheap is they are not 100% reliable. I am testing another brand at the 
-    moment and when I have some decent test results I will report back.
+  Another potential alternative is these 3 stepper motors (they have proper shafts for the MMU2)
+   https://www.aliexpress.com/item/Prusa-i3-mk3-mk2-5-Multi-materials-2-0-3d-printer-motor-kit-MMU2-0/32923672790.html?spm=a2g0s.9042311.0.0.162b4c4dO5RBTY   (I have them on order but have not received them yet for testing)
 
 ## Other Stuff
 * 5   mk8 hobbed gears (https://www.amazon.com/gp/product/B07CJPP7R7/ref=oh_aui_detailpage_o03_s00?ie=UTF8&psc=1)
