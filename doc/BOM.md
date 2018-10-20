@@ -10,6 +10,7 @@ The most expensive parts are:  stepper motors ($30 for the three I purchased), a
 This is a starter list of stuff you will need to complete this MMU2 home brew clone
 
 # Change Notes:
+* 10.20.18 Added another stepper motor alternative (w/ proper axles) - from aliexpress.com
 * 10.17.18 Added 3 STL files required for build of the home-brew MMU2 (do the NEMA17 holder in PETG, other pieces can be 
                                                                           done in PLA or PETG)
 * 10.16.18 Changed the stepper motor recommendation, you can also get them on aliexpress.com)
