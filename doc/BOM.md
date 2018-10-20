@@ -1,6 +1,6 @@
 DIY Prusa Multi Material Upgrade (MMU) 2.0
 ==========================================
-Bill of Materials (10.7.2018)
+Bill of Materials (10.20.2018)
 ------------------------------
 For firmware, please refer to https://github.com/cskozlowski/mmu2
 
