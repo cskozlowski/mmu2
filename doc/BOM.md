@@ -78,6 +78,7 @@ This is a starter list of stuff you will need to complete this MMU2 home brew cl
                   ( I had a spare probe laying around so I have NOT tried this inductive probe)
                   (they are also available from aliexpress.com)
 * 1  7mm ball bearing  (mcmaster.carr or amazon), you only need one but you will have to buy many more
+* 2  6mm OD x .45mm thick brass tubing (ksmetals.com - part #982, this comes in 300mm length and you will have to cut it down)
 
 ## Custom STL Files
 * 1  MMU2 to PTFE Festo Coupler 
